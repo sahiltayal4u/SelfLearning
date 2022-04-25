@@ -13,10 +13,12 @@ import com.example.selflearning.adapter.RoomAdapter
 import com.example.selflearning.databinding.FragmentRoomBinding
 import com.example.selflearning.repository.Repository
 import com.example.selflearning.repository.utils.Resource
+import com.example.selflearning.utils.UIState
 import com.example.selflearning.viewmodel.RoomViewModel
 import com.example.selflearning.viewmodel.ViewModelProviderFactory
 import com.google.android.material.snackbar.Snackbar
 import java.util.prefs.Preferences
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -39,7 +41,7 @@ class RoomFragment : Fragment() {
 //        ViewModelProvider(this)[RoomViewModel::class.java]
 //    }
 
-    private lateinit var viewModel: RoomViewModel
+    private val viewModel: RoomViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,10 +59,23 @@ class RoomFragment : Fragment() {
     ): View? {
         binding = FragmentRoomBinding.inflate(layoutInflater, container, false)
         // Inflate the layout for this fragment
-        init()
+        //init()
 
         binding.roomList.layoutManager = GridLayoutManager(requireContext(),2)
-        viewModel.roomdata.observe(viewLifecycleOwner,{event->
+        viewModel.roomdata.observe(viewLifecycleOwner,{response->
+            when (response) {
+                is UIState.LOADING -> {}
+                is UIState.SUCCESS -> {
+
+                    val rooms=response.success as Rooms
+                    binding.roomList.adapter = RoomAdapter(rooms)
+                }
+                is UIState.ERROR -> {
+
+                }
+            }
+        })
+        /*viewModel.roomdata.observe(viewLifecycleOwner,{event->
             event.getContentIfNotHandled()?.let { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -82,7 +97,7 @@ class RoomFragment : Fragment() {
                     }
                 }
             }
-        })
+        })*/
 
         viewModel.getRoomData()
         // viewModel.getPeopleData()
@@ -90,14 +105,14 @@ class RoomFragment : Fragment() {
 
         //binding.roomList.setLayoutManager(GridLayoutManager(this, 2))
     }
-
+/*
     private fun init() {
         activity?.let{it->
             val repository = Repository()
             val factory = ViewModelProviderFactory(it.application, repository)
-            viewModel = ViewModelProvider(this, factory).get(RoomViewModel::class.java)
+            //viewModel = ViewModelProvider(this, factory).get(RoomViewModel::class.java)
         }
-    }
+    }*/
 
     companion object {
         /**

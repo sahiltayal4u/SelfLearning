@@ -14,10 +14,11 @@ import com.example.selflearning.adapter.RoomAdapter
 import com.example.selflearning.databinding.FragmentPeopleBinding
 import com.example.selflearning.repository.Repository
 import com.example.selflearning.repository.utils.Resource
+import com.example.selflearning.utils.UIState
 import com.example.selflearning.viewmodel.RoomViewModel
 import com.example.selflearning.viewmodel.ViewModelProviderFactory
 
-
+import org.koin.androidx.viewmodel.ext.android.viewModel
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 private const val ARG_PARAM1 = "param1"
@@ -39,7 +40,7 @@ class PeopleFragment : Fragment() {
 //        ViewModelProvider(this)[RoomViewModel::class.java]
 //    }
 
-    private lateinit var viewModel: RoomViewModel
+    private  val viewModel: RoomViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,9 +57,22 @@ class PeopleFragment : Fragment() {
         // Inflate the layout for this fragment
 
         binding = FragmentPeopleBinding.inflate(layoutInflater,container,false)
-        init()
+        //init()
         binding.peopleList.layoutManager = LinearLayoutManager(context)
-        viewModel.peopledata.observe(viewLifecycleOwner,{event->
+        viewModel.peopledata.observe(viewLifecycleOwner,{response->
+            when (response) {
+                is UIState.LOADING -> {}
+                is UIState.SUCCESS -> {
+
+                    val people=response.success as People
+                    binding.peopleList.adapter = PeopleAdapter(people)
+                }
+                is UIState.ERROR -> {
+
+                }
+            }
+        })
+       /* viewModel.peopledata.observe(viewLifecycleOwner,{event->
             event.getContentIfNotHandled()?.let { response ->
                 when (response) {
                     is Resource.Success -> {
@@ -80,20 +94,20 @@ class PeopleFragment : Fragment() {
                     }
                 }
             }
-        })
+        })*/
 
         viewModel.getPeopleData()
         return binding.root
 
     }
 
-    private fun init() {
+/*    private fun init() {
         activity?.let{it->
             val repository = Repository()
             val factory = ViewModelProviderFactory(it.application, repository)
-            viewModel = ViewModelProvider(this, factory).get(RoomViewModel::class.java)
+            //viewModel = ViewModelProvider(this, factory).get(RoomViewModel::class.java)
         }
-    }
+    }*/
 
     companion object {
         /**

@@ -10,24 +10,28 @@ import com.example.selflearning.People
 import com.example.selflearning.Rooms
 import com.example.selflearning.network.RoomApi
 import com.example.selflearning.repository.Repository
+import com.example.selflearning.repository.RoomRepository
 import com.example.selflearning.repository.utils.Event
 import com.example.selflearning.repository.utils.Resource
-import kotlinx.coroutines.launch
+import com.example.selflearning.utils.UIState
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import retrofit2.Call
 import retrofit2.Response
 import javax.security.auth.callback.Callback
 
 class RoomViewModel(
-    app: Application,
-    private val appRepository: Repository
-): ViewModel() {
-    private val _roomdata : MutableLiveData<Event<Resource<Rooms>>> = MutableLiveData<Event<Resource<Rooms>>>()
-    val roomdata : LiveData<Event<Resource<Rooms>>> get() = _roomdata
+    private val roomRepository: RoomRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + ioDispatcher)
+) : CoroutineScope by coroutineScope, ViewModel(){
+    private val _roomdata : MutableLiveData<UIState> = MutableLiveData<UIState>()
+    val roomdata : LiveData<UIState> get() = _roomdata
 
-    private val _peopledata : MutableLiveData<Event<Resource<People>>> = MutableLiveData<Event<Resource<People>>>()
-    val peopledata : LiveData<Event<Resource<People>>> get() = _peopledata
+    private val _peopledata : MutableLiveData<UIState> = MutableLiveData<UIState>()
+    val peopledata : LiveData<UIState> get() = _peopledata
 
-    fun getRoomData(){
+   /* fun getRoomData(){
         viewModelScope.launch {
             val response=appRepository.getRoom()
             _roomdata.postValue(handleRoomResponse(response))
@@ -39,9 +43,11 @@ class RoomViewModel(
             val response=appRepository.getPeople()
             _peopledata.postValue(handlePeopleResponse(response))
         }
-    }
+    }*/
 
-    private fun handleRoomResponse(response: Response<Rooms>): Event<Resource<Rooms>>? {
+
+
+    /*private fun handleRoomResponse(response: Response<Rooms>): Event<Resource<Rooms>>? {
         if (response.isSuccessful) {
             response.body()?.let { resultResponse ->
                 return Event(Resource.Success(resultResponse))
@@ -57,5 +63,46 @@ class RoomViewModel(
             }
         }
         return Event(Resource.Error(response.message()))
+    }*/
+
+    fun getRoomData() {
+        _roomdata.postValue(UIState.LOADING())
+        collectUsersList()
+        launch {
+            roomRepository.roomData()
+        }
     }
+
+    private fun collectUsersList() {
+        launch {
+            roomRepository.roomresponseFlow.collect { uiState ->
+                when(uiState) {
+                    is UIState.LOADING -> { _roomdata.postValue(uiState) }
+                    is UIState.SUCCESS -> { _roomdata.postValue(uiState) }
+                    is UIState.ERROR -> { _roomdata.postValue(uiState) }
+                }
+            }
+        }
+    }
+
+    fun getPeopleData() {
+        _peopledata.postValue(UIState.LOADING())
+        collectTagsList()
+        launch {
+            roomRepository.peopleData()
+        }
+    }
+
+    private fun collectTagsList() {
+        launch {
+            roomRepository.peopleresponseFlow.collect { uiState ->
+                when(uiState) {
+                    is UIState.LOADING -> { _peopledata.postValue(uiState) }
+                    is UIState.SUCCESS -> { _peopledata.postValue(uiState) }
+                    is UIState.ERROR -> { _peopledata.postValue(uiState) }
+                }
+            }
+        }
+    }
+
 }
